@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WordType {
+  NOUN
+  VERB
+  ADJECTIVE
+  ADVERB
+  CONJUNCTION
+  INTERJECTION
+  PRONOUN
+}
+
+// Users
+model User {
+  id    Int    @id @default(autoincrement())
+  email String @unique()
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+
+  userWords UserWord[]
+  sentences UserSentence[]
+
+  @@map("users")
+}
+
+// Learning Stages
+model LearningStage {
+  id           Int     @id @default(autoincrement())
+  stageName    String // e.g., "New", "Learning", "Mastered", "Reviewing", "Forgotten"
+  description  String? // Optional description of the stage
+  stayDuration Int // Duration to stay in this stage (in days or weeks, based on your needs)
+  interval     Int // Spaced repetition interval (e.g., days after which the user should review)
+
+  userWords UserWord[]
+
+  @@map("learning_stages")
+}
+
+// Test Level
+model TestLevel {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  languageId  Int
+  ranking     Int
+
+  language Language @relation(fields: [languageId], references: [id])
+  words    Word[]
+
+  @@map("test_levels")
+}
+
+// UserWords (Each word learned by a user)
+model UserWord {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  wordId          Int
+  nextReview      DateTime // Next review date based on spaced repetition
+  repetitionCount Int // Number of repetitions performed on this word
+  learningStageId Int // Foreign key to LearningStage
+  reviewedAt      DateTime? // Last time it was reviewed
+
+  user          User          @relation(fields: [userId], references: [id])
+  word          Word          @relation(fields: [wordId], references: [id])
+  learningStage LearningStage @relation(fields: [learningStageId], references: [id])
+
+  @@map("user_words")
+}
+
+model UserSentence {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  wordOrder Json // Array of word IDs in order
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_sentences")
+}
+
+// Languages
+model Language {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  words      Word[]
+  testLevels TestLevel[]
+  particles  Particle[]
+
+  @@map("languages")
+}
+
+// Words (General words)
+model Word {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  type        WordType
+  languageId  Int
+  testLevelId Int
+
+  language  Language   @relation(fields: [languageId], references: [id])
+  testLevel TestLevel  @relation(fields: [testLevelId], references: [id])
+  userWords UserWord[]
+
+  @@map("words")
+}
+
+// Particles (For languages like Japanese)
+model Particle {
+  id          Int    @id @default(autoincrement())
+  name        String // Particle name (e.g., "は", "が", "に")
+  description String // Description of the particle's use (e.g., subject marker, object marker)
+  type        String // Type of particle (e.g., subject marker, object marker, etc.)
+  languageId  Int
+
+  language Language @relation(fields: [languageId], references: [id])
+
+  @@map("particles")
+}
