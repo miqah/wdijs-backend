@@ -29,14 +29,4 @@ export class FirebaseService {
       throw new UnauthorizedException('Invalid Firebase ID token');
     }
   }
-
-  async getUserData(uid: string) {
-    try {
-      const userRecord = await admin.auth().getUser(uid);
-      return userRecord;
-    } catch (error) {
-      this.logger.log('Failed to get user data ', error);
-      throw new UnauthorizedException('User not found');
-    }
-  }
 }

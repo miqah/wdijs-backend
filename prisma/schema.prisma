@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -114,6 +113,7 @@ model Word {
 
   language  Language   @relation(fields: [languageId], references: [id])
   testLevel TestLevel  @relation(fields: [testLevelId], references: [id])
+  kanjis      Kanji[]    @relation("KanjiWords")
   userWords UserWord[]
 
   @@map("words")
@@ -130,4 +130,69 @@ model Particle {
   language Language @relation(fields: [languageId], references: [id])
 
   @@map("particles")
+}
+
+model Kanji {
+  id          Int      @id @default(autoincrement())
+  name        String
+  imageUrl         String?      // Optional URL for an image representing the kanji
+  strokeOrder      String?      // SVG or JSON string representing stroke order (optional)
+  examples         String?
+  description String
+  grade            Int?       
+  frequency        Int?       
+  jlptLevel        Int?    
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+      
+  radicals    Radical[] @relation("KanjiRadicals") 
+  words       Word[]    @relation("KanjiWords")     
+  onyomiReadings  KanjiOnyomi[] 
+  kunyomiReadings KanjiKunyomi[] 
+  nanoriReadings  KanjiNanori[]
+
+  @@map("kanji")
+}
+
+model KanjiOnyomi {
+    id      Int      @id @default(autoincrement())
+    reading String
+    kanjiId Int
+    kanji   Kanji    @relation(fields: [kanjiId], references: [id])
+
+    @@unique([kanjiId, reading]) 
+}
+
+model KanjiKunyomi {
+    id      Int      @id @default(autoincrement())
+    reading String
+    kanjiId Int
+    kanji   Kanji    @relation(fields: [kanjiId], references: [id])
+
+    @@unique([kanjiId, reading])
+}
+
+model KanjiNanori {
+    id      Int      @id @default(autoincrement())
+    reading String
+    kanjiId Int
+    kanji   Kanji    @relation(fields: [kanjiId], references: [id])
+
+    @@unique([kanjiId, reading])
+}
+
+// Radical
+model Radical {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameRomaji  String 
+  meaning     String
+  strokeCount Int?
+  imageUrl    String?
+  description String
+  kanjis      Kanji[]  @relation("KanjiRadicals")  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("radicals")
 }

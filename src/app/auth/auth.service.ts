@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { login } from './methods/login';
-import { signup } from './methods/signup';
 import { FirebaseService } from '../firebase/firebase.service';
+import { signIn } from './methods/signIn';
+import signUp from './methods/signUp';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +11,6 @@ export class AuthService {
     protected readonly firebaseService: FirebaseService,
   ) {}
 
-  login = login;
-  signup = signup;
+  signIn = signIn;
+  signUp = signUp;
 }
