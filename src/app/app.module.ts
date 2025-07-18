@@ -8,6 +8,9 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { GeminiModule } from './gemini/gemini.module';
 import { TranslatorModule } from './translator/translator.module';
 import { KanjiBuilderModule } from './kanji-builder/kanji-builder.module';
+import { APP_GUARD } from '@nestjs/core';
+import { FirebaseAuthGuard } from 'app/firebase/guards/firebase-auth.guard';
+import { VoskModule } from './vosk/vosk.module';
 
 @Module({
   imports: [
@@ -18,8 +21,12 @@ import { KanjiBuilderModule } from './kanji-builder/kanji-builder.module';
     GeminiModule,
     TranslatorModule,
     KanjiBuilderModule,
+    VoskModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, {
+    provide: APP_GUARD,
+    useClass: FirebaseAuthGuard
+  }],
 })
 export class AppModule {}

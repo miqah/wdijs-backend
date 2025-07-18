@@ -1,18 +1,22 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, MessageEvent, Post, Sse } from '@nestjs/common';
 import { TranslatorService } from './translator.service';
+import { TranslationRequestDto } from './dtos/translation.dto';
+import { User } from 'decorators/user.decorator';
+import { User as UserType } from '@prisma/client';
+import { Observable } from 'rxjs';
 
 @Controller('/translator')
 export class TranslatorController {
   constructor(private readonly translatorService: TranslatorService) {}
 
-  @Post('/translate/:languageId')
-  async translate(
-    @Param('languageId') languageId: string,
-    @Body('input') input: string,
-  ) {
-    return await this.translatorService.translate({
-      input,
-      languageId,
+  @Post('/translate')
+  @Sse()
+  translate(
+    @Body() translationRequestDto: TranslationRequestDto,
+    @User() user: UserType,
+  ): Observable<MessageEvent> {
+    return this.translatorService.translate({
+      translationRequestDto,
     });
   }
 }

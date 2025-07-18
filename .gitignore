@@ -12,11 +12,22 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+
+#data
+prisma/seeder/japanese/kanjidic2.xml
+prisma/seeder/japanese/kradfile.xml
+prisma/seeder/japanese/kradfile.txt
+prisma/seeder/japanese/kradfile2.txt
+
+
+
 # Config
 /src/config/*
+
 # OS
 .DS_Store
 
+/models*
 # Tests
 /coverage
 /.nyc_output
