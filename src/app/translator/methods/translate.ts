@@ -3,6 +3,7 @@ import { TranslationRequestDto } from '../dtos/translation.dto';
 import { convertToWav } from 'utils/convertToWav';
 import { Observable } from 'rxjs';
 import { TranslatorService } from '../translator.service';
+import { randomUUID } from 'crypto';
 
 export function translate(this: TranslatorService, {
   translationRequestDto,
@@ -64,11 +65,15 @@ export function translate(this: TranslatorService, {
         );
         this.logger.log(`Transcription result: "${response}"`);
         
+        const responseMessageKey = randomUUID()
+        const translationMessageKey = randomUUID()
+
         // Send recognized text first
         this.logger.log('Sending initial transcription to client');
         subscriber.next({
           data: JSON.stringify({
             response,
+            key: responseMessageKey,
           }),
         });
         
@@ -86,6 +91,7 @@ export function translate(this: TranslatorService, {
           subscriber.next({
             data: JSON.stringify({
               transcription: chunk,
+              key: translationMessageKey
             }),
           });
         }
