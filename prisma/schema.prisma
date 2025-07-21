@@ -25,10 +25,54 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
 
-  userWords UserWord[]
-  sentences UserSentence[]
+  userSchedule UserSchedule?  @relation("UserToSchedule")
+  userBots     UserBot[]
+  userWords    UserWord[]
+  sentences    UserSentence[]
 
   @@map("users")
+}
+
+model UserSchedule {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique()
+  timezone  String
+  startTime DateTime
+  endTime   DateTime
+  frequency String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserToSchedule", fields: [userId], references: [id])
+
+  @@map("user_schedules")
+}
+
+model Bot {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  basePrompt  String
+  createdAt   DateTime @default(now())
+
+  userBots UserBot[]
+
+  @@map("bots")
+}
+
+model UserBot {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique()
+  botId     Int
+  nickname  String
+  context   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  bot  Bot  @relation(fields: [botId], references: [id])
+
+  @@map("user_bots")
 }
 
 // Learning Stages
