@@ -80,6 +80,7 @@ Important:
 - Only reply in ${targetLang}
 - Do not include any labels like "Reply:" or "Options:"
 - Do not use JSON or special formatting
+- Do not reply with romanji
 - Do not explain the answer
 - Just return a natural conversational reply
     `.trim();

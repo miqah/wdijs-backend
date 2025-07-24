@@ -117,17 +117,6 @@ model ScheduleItemWord {
   @@map("schedule_item_words")
 }
 
-model ScheduleItemSentence {
-  id             Int @id @default(autoincrement())
-  scheduleItemId Int @unique
-  userSentenceId Int @unique
-
-  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
-  userSentence UserSentence @relation(fields: [userSentenceId], references: [id], onDelete: Cascade)
-
-  @@map("schedule_item_sentences")
-}
-
 model ScheduleItemBot {
   id             Int @id @default(autoincrement())
   scheduleItemId Int @unique
@@ -214,7 +203,6 @@ model UserWord {
   word             Word               @relation(fields: [wordId], references: [id])
   learningStage    LearningStage      @relation(fields: [learningStageId], references: [id])
   ScheduleItemWord ScheduleItemWord?
-  sentenceItems    UserSentenceItem[]
 
   @@index([userId])
   @@index([wordId])
@@ -227,34 +215,44 @@ model UserSentence {
   userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
-
+  
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sentenceItems        UserSentenceItem[]
+  wordOccurrences      SentenceWordOccurrence[] 
   ScheduleItemSentence ScheduleItemSentence?
-
+  
   @@index([userId])
   @@map("user_sentences")
 }
 
-model UserSentenceItem {
+model ScheduleItemSentence {
+  id             Int @id @default(autoincrement())
+  scheduleItemId Int @unique
+  sentenceId     Int @unique
+
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  sentence     UserSentence @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_item_sentences")
+}
+
+
+model SentenceWordOccurrence {
   id             Int  @id @default(autoincrement())
-  userSentenceId Int
-  orderIndex     Int
-  userWordId     Int?
-  particleId     Int?
+  sentenceId     Int
+  wordId         Int
+  orderIndex     Int  // Simple position in sentence (1st word, 2nd word, etc.)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt()
-
-  userSentence UserSentence @relation(fields: [userSentenceId], references: [id], onDelete: Cascade)
-  userWord     UserWord?    @relation(fields: [userWordId], references: [id])
-  particle     Particle?    @relation(fields: [particleId], references: [id])
-
-  @@unique([userSentenceId, orderIndex])
-  @@index([userSentenceId])
-  @@index([userWordId])
-  @@index([particleId])
-  @@map("user_sentence_items")
+  
+  sentence UserSentence @relation(fields: [sentenceId], references: [id], onDelete: Cascade)
+  word     Word         @relation(fields: [wordId], references: [id])
+  
+  @@unique([sentenceId, orderIndex]) // Ensure correct ordering
+  @@index([sentenceId])
+  @@index([wordId])
+  @@map("sentence_word_occurrences")
 }
+
   
 model Language {
   id          Int      @id @default(autoincrement())
@@ -265,7 +263,6 @@ model Language {
 
   words      Word[]
   testLevels TestLevel[]
-  particles  Particle[]
 
   @@map("languages")
 }
@@ -283,6 +280,7 @@ model Word {
   language  Language      @relation(fields: [languageId], references: [id])
   testLevel TestLevel?    @relation(fields: [testLevelId], references: [id])
   userWords UserWord[]
+  sentenceOccurrences SentenceWordOccurrence[] 
   writings  WordWriting[]
   readings  WordReading[]
   senses    WordSense[]
@@ -355,23 +353,6 @@ model EnglishGloss {
   @@map("english_glosses")
 }
 
-model Particle {
-  id          Int       @id @default(autoincrement())
-  name        String
-  description String
-  type        String
-  languageId  Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt()
-
-  language      Language           @relation(fields: [languageId], references: [id])
-  sentenceItems UserSentenceItem[]
-
-  @@unique([name, languageId])
-  @@index([languageId])
-  @@map("particles")
-}
-
 model Kanji {
   id          Int       @id @default(autoincrement())
   character   String    @unique
@@ -386,11 +367,13 @@ model Kanji {
   onyomiReadings  KanjiOnyomi[]
   kunyomiReadings KanjiKunyomi[]
   nanoriReadings  KanjiNanori[]
-  radicals        Radical[]      @relation("KanjiRadicals")
+  radicals        Radical[]      @relation("kanji_radicals")
   writingUsages KanjiInWriting[] 
 
   @@index([jlptLevel])
   @@index([grade])
+
+  @@map("kanji")
 }
 
 model KanjiInWriting {
@@ -465,7 +448,7 @@ model Radical {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt()
 
-  kanjis Kanji[] @relation("KanjiRadicals")
+  kanjis Kanji[] @relation("kanji_radicals")
 
   @@unique([symbol])
   @@index([strokeCount])

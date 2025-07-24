@@ -133,8 +133,71 @@ async function streamTranslation(
     );
 
     const tokens = this.kuromojiService.tokenize(chunk);
+    const foundWords: any[] = [];
 
-    console.log(JSON.stringify(tokens, null, 2));
+    for (const token of tokens) {
+      const surface = token.surface_form;
+      const reading = token.reading; // This will be in katakana
+
+      // Check if the token contains kanji
+      const containsKanji = /[\u4e00-\u9faf]/.test(surface);
+
+      // Determine if we should search in writings or readings
+      let word;
+
+      if (containsKanji) {
+        // If the surface form contains kanji, look it up in writings
+        word = await this.prismaService.word.findFirst({
+          where: {
+            writings: {
+              some: {
+                text: surface,
+              },
+            },
+          },
+          include: {
+            writings: true,
+            senses: {
+              include: {
+                englishGlosses: true,
+              },
+            },
+          },
+        });
+      } else {
+        // If it's all kana, look it up in readings
+        word = await this.prismaService.word.findFirst({
+          where: {
+            readings: {
+              some: {
+                value: surface,
+              },
+            },
+          },
+          include: {
+            readings: true,
+            senses: {
+              include: {
+                englishGlosses: true,
+              },
+            },
+          },
+        });
+      }
+
+      if (word) {
+        foundWords.push({
+          surface,
+          wordId: word.id,
+          senses: word.senses.map((sense) => ({
+            partOfSpeech: sense.partOfSpeech,
+            glosses: sense.englishGlosses.map((g) => g.text),
+          })),
+        });
+      }
+    }
+    console.log(JSON.stringify(foundWords, null, 2));
+
     subscriber.next({
       data: JSON.stringify({
         transcription: chunk,

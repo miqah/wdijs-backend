@@ -13,6 +13,7 @@ import { FirebaseAuthGuard } from 'app/firebase/guards/firebase-auth.guard';
 import { ScheduleModule } from './schedule/schedule.module';
 import { UserModule } from './user/user.module';
 import { KuromojiModule } from './kuromoji/kuromoji.module';
+import { WordModule } from './word/word.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { KuromojiModule } from './kuromoji/kuromoji.module';
     ScheduleModule,
     UserModule,
     KuromojiModule,
+    WordModule,
   ],
   controllers: [AppController],
   providers: [
