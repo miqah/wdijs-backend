@@ -174,11 +174,7 @@ async function importFromKanjidic(prismaClient: PrismaClient) {
         }
         // Stroke count
         const strokeCount = parseInt(character.misc?.stroke_count || '0', 10);
-        // Example if available
-        const examples =
-          kunyomiReadings.length > 0
-            ? `Kun readings (with kanji): ${kunyomiReadings.join(', ')}`
-            : null;
+
         try {
           // Create the kanji entry - without connecting radicals or creating words
           await prismaClient.kanji.create({
@@ -419,9 +415,9 @@ async function linkKanjiWithRadicals(
 export async function createJapaneseLanguage(prismaClient: PrismaClient) {
   try {
     await ensureBasicDataExists(prismaClient);
-    await seedJMDict(prismaClient);
     await importFromKanjidic(prismaClient);
     await linkKanjiWithRadicals(prismaClient);
+    await seedJMDict(prismaClient);
     await seedBaseBot(prismaClient);
     console.log('Data import completed successfully!');
   } catch (error) {

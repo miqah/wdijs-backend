@@ -8,21 +8,65 @@ datasource db {
 }
 
 enum WordType {
-  N
-  PN
-  AN
-  V1
-  V5U
-  VS
-  ADJ_I
-  ADJ_NA
-  ADV
-  CONJ
-  INTERJ
-  PRON
-  SUFFIX
-  PREFIX
-  EXP
+  // Nouns
+  N           // Common noun
+  N_ADV       // Adverbial noun
+  N_T         // Temporal noun
+  N_PREF      // Noun prefix
+  N_SUF       // Noun suffix
+  
+  // Pronouns
+  PN          // Pronoun
+  
+  // Verbs
+  V1          // Ichidan verb
+  V5B         // Godan verb with 'bu' ending
+  V5G         // Godan verb with 'gu' ending
+  V5K         // Godan verb with 'ku' ending
+  V5M         // Godan verb with 'mu' ending
+  V5N         // Godan verb with 'nu' ending
+  V5R         // Godan verb with 'ru' ending
+  V5S         // Godan verb with 'su' ending
+  V5T         // Godan verb with 'tsu' ending
+  V5U         // Godan verb with 'u' ending
+  V5K_S       // Godan verb - Iku/Yuku special class
+  VS          // Suru verb
+  VS_S        // Special suru verb
+  VS_I        // Irregular suru verb
+  VK          // Kuru verb - special class
+  VZ          // Zuru verb - special class
+  VI          // Intransitive verb
+  VT          // Transitive verb
+  
+  // Adjectives
+  ADJ_I       // i-adjective
+  ADJ_NA      // na-adjective
+  ADJ_NO      // no-adjective
+  ADJ_PN      // Pre-noun adjectival
+  ADJ_T       // 'taru' adjective
+  ADJ_F       // 'ku' adjective (archaic)
+  
+  // Adverbs
+  ADV         // Adverb
+  ADV_TO      // Adverb with 'to'
+  
+  // Others
+  AUX         // Auxiliary
+  AUX_V       // Auxiliary verb
+  AUX_ADJ     // Auxiliary adjective
+  CONJ        // Conjunction
+  COOR        // Coordinate conjunction
+  CTR         // Counter
+  EXP         // Expression
+  INT         // Interjection
+  INTERJ      // Interjection (same as INT)
+  PRT         // Particle
+  PREF        // Prefix
+  SUFFIX      // Suffix
+  PROV        // Proverb
+  
+  // Unclassified/misc
+  X           // Other/unclassified
 }
 
 enum PracticeType {
@@ -53,11 +97,12 @@ model ScheduleItem {
   easeFactor   Float
   lastReviewed DateTime?
 
-  user     User                  @relation(fields: [userId], references: [id])
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   word     ScheduleItemWord?
   sentence ScheduleItemSentence?
   bot      ScheduleItemBot?
 
+  @@index([userId])
   @@map("schedule_items")
 }
 
@@ -66,8 +111,10 @@ model ScheduleItemWord {
   scheduleItemId Int @unique
   userWordId     Int @unique
 
-  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
-  userWord     UserWord     @relation(fields: [userWordId], references: [id])
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  userWord     UserWord     @relation(fields: [userWordId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_item_words")
 }
 
 model ScheduleItemSentence {
@@ -75,8 +122,10 @@ model ScheduleItemSentence {
   scheduleItemId Int @unique
   userSentenceId Int @unique
 
-  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
-  userSentence UserSentence @relation(fields: [userSentenceId], references: [id])
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  userSentence UserSentence @relation(fields: [userSentenceId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_item_sentences")
 }
 
 model ScheduleItemBot {
@@ -84,8 +133,10 @@ model ScheduleItemBot {
   scheduleItemId Int @unique
   userBotId      Int @unique
 
-  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
-  userBot      UserBot      @relation(fields: [userBotId], references: [id])
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id], onDelete: Cascade)
+  userBot      UserBot      @relation(fields: [userBotId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_item_bots")
 }
 
 model Bot {
@@ -94,6 +145,7 @@ model Bot {
   description String
   basePrompt  String
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt()
   userBots    UserBot[]
 
   @@map("bots")
@@ -101,7 +153,7 @@ model Bot {
 
 model UserBot {
   id                Int      @id @default(autoincrement())
-  userId            Int      @unique()
+  userId            Int      
   botId             Int
   nickname          String
   context           String
@@ -110,10 +162,12 @@ model UserBot {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt()
 
-  user            User             @relation(fields: [userId], references: [id])
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   bot             Bot              @relation(fields: [botId], references: [id])
   ScheduleItemBot ScheduleItemBot?
 
+  @@index([userId])
+  @@index([botId])
   @@map("user_bots")
 }
 
@@ -124,7 +178,10 @@ model LearningStage {
   stayDuration Int
   interval     Int
   userWords    UserWord[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt()
 
+  @@unique([stageName])
   @@map("learning_stages")
 }
 
@@ -134,10 +191,14 @@ model TestLevel {
   description String?
   languageId  Int
   ranking     Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt()
 
   language Language @relation(fields: [languageId], references: [id])
   words    Word[]
 
+  @@unique([name, languageId])
+  @@index([languageId])
   @@map("test_levels")
 }
 
@@ -146,13 +207,18 @@ model UserWord {
   userId          Int
   wordId          Int
   learningStageId Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt()
 
-  user             User               @relation(fields: [userId], references: [id])
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   word             Word               @relation(fields: [wordId], references: [id])
   learningStage    LearningStage      @relation(fields: [learningStageId], references: [id])
   ScheduleItemWord ScheduleItemWord?
   sentenceItems    UserSentenceItem[]
 
+  @@index([userId])
+  @@index([wordId])
+  @@index([learningStageId])
   @@map("user_words")
 }
 
@@ -162,10 +228,11 @@ model UserSentence {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
 
-  user                 User                  @relation(fields: [userId], references: [id])
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   sentenceItems        UserSentenceItem[]
   ScheduleItemSentence ScheduleItemSentence?
 
+  @@index([userId])
   @@map("user_sentences")
 }
 
@@ -175,18 +242,23 @@ model UserSentenceItem {
   orderIndex     Int
   userWordId     Int?
   particleId     Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt()
 
-  userSentence UserSentence @relation(fields: [userSentenceId], references: [id])
+  userSentence UserSentence @relation(fields: [userSentenceId], references: [id], onDelete: Cascade)
   userWord     UserWord?    @relation(fields: [userWordId], references: [id])
   particle     Particle?    @relation(fields: [particleId], references: [id])
 
   @@unique([userSentenceId, orderIndex])
+  @@index([userSentenceId])
+  @@index([userWordId])
+  @@index([particleId])
   @@map("user_sentence_items")
 }
-
+  
 model Language {
   id          Int      @id @default(autoincrement())
-  name        String
+  name        String   @unique
   description String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt()
@@ -200,129 +272,202 @@ model Language {
 
 model Word {
   id          Int      @id @default(autoincrement())
-  type        WordType
   languageId  Int
-  testLevelId Int
+  testLevelId Int?
+  isCommon    Boolean  @default(false)
+  priority    Int?
+  entSeq      Int? 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt()
 
   language  Language      @relation(fields: [languageId], references: [id])
-  testLevel TestLevel     @relation(fields: [testLevelId], references: [id])
-  kanjis    Kanji[]       @relation("KanjiWords")
+  testLevel TestLevel?    @relation(fields: [testLevelId], references: [id])
   userWords UserWord[]
   writings  WordWriting[]
   readings  WordReading[]
   senses    WordSense[]
 
+  @@index([languageId])
+  @@index([testLevelId])
+  @@index([isCommon])
   @@map("words")
 }
 
 model WordReading {
-  id     Int    @id @default(autoincrement())
-  wordId Int
-  value  String
+  id        Int      @id @default(autoincrement())
+  wordId    Int
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 
-  word Word @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([wordId])
+  @@index([value])
+  @@map("word_readings")
 }
 
 model WordWriting {
-  id     Int     @id @default(autoincrement())
-  wordId Int
-  text   String
-  isKana Boolean
+  id        Int      @id @default(autoincrement())
+  wordId    Int
+  text      String
+  isKana    Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 
-  word Word @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  kanjiUsages KanjiInWriting[]
+  
 
   @@unique([wordId, text])
+  @@index([wordId])
+  @@index([text])
   @@map("word_writings")
 }
 
 model WordSense {
-  id      Int     @id @default(autoincrement())
-  wordId  Int
-  meaning String
-  tags    String? // e.g., "common", "slang", or parts of speech
-
-  word Word @relation(fields: [wordId], references: [id])
-
+  id             Int       @id @default(autoincrement())
+  wordId         Int
+  partOfSpeech   WordType
+  originalPosTag String?   
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt()
+  
+  word           Word            @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  englishGlosses EnglishGloss[]
+  
+  @@index([wordId])
+  @@index([partOfSpeech])
   @@map("word_senses")
 }
 
+model EnglishGloss {
+  id          Int       @id @default(autoincrement())
+  wordSenseId Int
+  text        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt()
+  
+  wordSense   WordSense @relation(fields: [wordSenseId], references: [id], onDelete: Cascade)
+  
+  @@index([wordSenseId])
+  @@index([text])
+  @@map("english_glosses")
+}
+
 model Particle {
-  id          Int    @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String
   type        String
   languageId  Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt()
 
   language      Language           @relation(fields: [languageId], references: [id])
   sentenceItems UserSentenceItem[]
 
+  @@unique([name, languageId])
+  @@index([languageId])
   @@map("particles")
 }
 
 model Kanji {
-  id          Int     @id @default(autoincrement())
-  character   String  @unique
+  id          Int       @id @default(autoincrement())
+  character   String    @unique
   strokeCount Int?
   grade       Int?
   frequency   Int?
   jlptLevel   Int?
   imageUrl    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt()
 
   onyomiReadings  KanjiOnyomi[]
   kunyomiReadings KanjiKunyomi[]
   nanoriReadings  KanjiNanori[]
   radicals        Radical[]      @relation("KanjiRadicals")
-  words           Word[]         @relation("KanjiWords")
+  writingUsages KanjiInWriting[] 
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
+  @@index([jlptLevel])
+  @@index([grade])
+}
+
+model KanjiInWriting {
+  id          Int         @id @default(autoincrement())
+  writingId   Int
+  kanjiId     Int
+  position    Int         
+  
+  writing     WordWriting @relation(fields: [writingId], references: [id], onDelete: Cascade)
+  kanji       Kanji       @relation(fields: [kanjiId], references: [id])
+  
+  @@unique([writingId, position])
+  @@index([kanjiId])
+  @@map("kanji_in_writings")
+
 }
 
 model KanjiOnyomi {
-  id      Int    @id @default(autoincrement())
-  reading String
-  kanjiId Int
-  kanji   Kanji  @relation(fields: [kanjiId], references: [id])
+  id        Int      @id @default(autoincrement())
+  reading   String
+  kanjiId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+  
+  kanji     Kanji    @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
 
   @@unique([kanjiId, reading])
+  @@index([kanjiId])
+  @@map("kanji_onyomi")
 }
 
 model KanjiKunyomi {
-  id      Int    @id @default(autoincrement())
-  reading String
-  kanjiId Int
-  kanji   Kanji  @relation(fields: [kanjiId], references: [id])
+  id        Int      @id @default(autoincrement())
+  reading   String
+  kanjiId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+  
+  kanji     Kanji    @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
 
   @@unique([kanjiId, reading])
+  @@index([kanjiId])
+  @@map("kanji_kunyomi")
 }
 
 model KanjiNanori {
-  id      Int    @id @default(autoincrement())
-  reading String
-  kanjiId Int
-  kanji   Kanji  @relation(fields: [kanjiId], references: [id])
+  id        Int      @id @default(autoincrement())
+  reading   String
+  kanjiId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+  
+  kanji     Kanji    @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
 
   @@unique([kanjiId, reading])
+  @@index([kanjiId])
+  @@map("kanji_nanori")
 }
 
 model Radical {
-  id             Int     @id @default(autoincrement())
-  symbol         String // Actual radical symbol (e.g. "氵")
-  name           String // Common English name (e.g. "water")
-  nameRomaji     String? // Optional romaji (e.g. "sanzui")
+  id             Int       @id @default(autoincrement())
+  symbol         String    // Actual radical symbol (e.g. "氵")
+  name           String    // Common English name (e.g. "water")
+  nameRomaji     String?   // Optional romaji (e.g. "sanzui")
   meaning        String
   strokeCount    Int?
-  position       String? // Position info like "left", "top", etc. (optional)
+  position       String?   // Position info like "left", "top", etc. (optional)
   imageUrl       String?
   description    String?
-  classification Int? // Radical number (e.g. 85 for "water")
-  frequency      Int? // Optional: how common this radical is (if using)
+  classification Int?      // Radical number (e.g. 85 for "water")
+  frequency      Int?      // Optional: how common this radical is (if using)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt()
 
   kanjis Kanji[] @relation("KanjiRadicals")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
-
   @@unique([symbol])
+  @@index([strokeCount])
   @@map("radicals")
 }
