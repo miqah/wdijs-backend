@@ -100,15 +100,15 @@ model Bot {
 }
 
 model UserBot {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique()
-  botId     Int
-  nickname  String
-  context   String
-  friendshipLevel    Int      @default(1) 
-  friendshipContext  String? 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique()
+  botId             Int
+  nickname          String
+  context           String
+  friendshipLevel   Int      @default(1)
+  friendshipContext String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt()
 
   user            User             @relation(fields: [userId], references: [id])
   bot             Bot              @relation(fields: [botId], references: [id])
@@ -147,9 +147,9 @@ model UserWord {
   wordId          Int
   learningStageId Int
 
-  user             User              @relation(fields: [userId], references: [id])
-  word             Word              @relation(fields: [wordId], references: [id])
-  learningStage    LearningStage     @relation(fields: [learningStageId], references: [id])
+  user             User               @relation(fields: [userId], references: [id])
+  word             Word               @relation(fields: [wordId], references: [id])
+  learningStage    LearningStage      @relation(fields: [learningStageId], references: [id])
   ScheduleItemWord ScheduleItemWord?
   sentenceItems    UserSentenceItem[]
 
@@ -170,18 +170,18 @@ model UserSentence {
 }
 
 model UserSentenceItem {
-  id              Int      @id @default(autoincrement())
-  userSentenceId  Int
-  orderIndex      Int
-  userWordId      Int?
-  particleId      Int?
+  id             Int  @id @default(autoincrement())
+  userSentenceId Int
+  orderIndex     Int
+  userWordId     Int?
+  particleId     Int?
 
   userSentence UserSentence @relation(fields: [userSentenceId], references: [id])
-  userWord     UserWord?     @relation(fields: [userWordId], references: [id])
-  particle     Particle?     @relation(fields: [particleId], references: [id])
+  userWord     UserWord?    @relation(fields: [userWordId], references: [id])
+  particle     Particle?    @relation(fields: [particleId], references: [id])
 
-  @@map("user_sentence_items")
   @@unique([userSentenceId, orderIndex])
+  @@map("user_sentence_items")
 }
 
 model Language {
@@ -204,44 +204,44 @@ model Word {
   languageId  Int
   testLevelId Int
 
-  language   Language      @relation(fields: [languageId], references: [id])
-  testLevel  TestLevel     @relation(fields: [testLevelId], references: [id])
-  kanjis     Kanji[]       @relation("KanjiWords")
-  userWords  UserWord[]
-  writings   WordWriting[]
-    readings    WordReading[] 
-  senses     WordSense[]
+  language  Language      @relation(fields: [languageId], references: [id])
+  testLevel TestLevel     @relation(fields: [testLevelId], references: [id])
+  kanjis    Kanji[]       @relation("KanjiWords")
+  userWords UserWord[]
+  writings  WordWriting[]
+  readings  WordReading[]
+  senses    WordSense[]
 
   @@map("words")
 }
 
 model WordReading {
-  id      Int   @id @default(autoincrement())
-  wordId  Int
-  value   String
+  id     Int    @id @default(autoincrement())
+  wordId Int
+  value  String
 
-  word    Word  @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id])
 }
 
 model WordWriting {
-  id      Int    @id @default(autoincrement())
-  wordId  Int
-  text    String
-  isKana  Boolean
+  id     Int     @id @default(autoincrement())
+  wordId Int
+  text   String
+  isKana Boolean
 
-  word    Word   @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id])
 
   @@unique([wordId, text])
   @@map("word_writings")
 }
 
 model WordSense {
-  id       Int    @id @default(autoincrement())
-  wordId   Int
-  meaning  String
-  tags     String? // e.g., "common", "slang", or parts of speech
+  id      Int     @id @default(autoincrement())
+  wordId  Int
+  meaning String
+  tags    String? // e.g., "common", "slang", or parts of speech
 
-  word     Word   @relation(fields: [wordId], references: [id])
+  word Word @relation(fields: [wordId], references: [id])
 
   @@map("word_senses")
 }
@@ -253,15 +253,15 @@ model Particle {
   type        String
   languageId  Int
 
-  language     Language         @relation(fields: [languageId], references: [id])
+  language      Language           @relation(fields: [languageId], references: [id])
   sentenceItems UserSentenceItem[]
 
   @@map("particles")
 }
 
 model Kanji {
-  id          Int      @id @default(autoincrement())
-  character   String   @unique 
+  id          Int     @id @default(autoincrement())
+  character   String  @unique
   strokeCount Int?
   grade       Int?
   frequency   Int?
@@ -271,11 +271,11 @@ model Kanji {
   onyomiReadings  KanjiOnyomi[]
   kunyomiReadings KanjiKunyomi[]
   nanoriReadings  KanjiNanori[]
-  radicals        Radical[]  @relation("KanjiRadicals")
-  words           Word[]     @relation("KanjiWords")
+  radicals        Radical[]      @relation("KanjiRadicals")
+  words           Word[]         @relation("KanjiWords")
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt()
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 }
 
 model KanjiOnyomi {
@@ -306,22 +306,22 @@ model KanjiNanori {
 }
 
 model Radical {
-  id           Int       @id @default(autoincrement())
-  symbol       String    // Actual radical symbol (e.g. "氵")
-  name         String    // Common English name (e.g. "water")
-  nameRomaji   String?   // Optional romaji (e.g. "sanzui")
-  meaning      String
-  strokeCount  Int?
-  position     String?   // Position info like "left", "top", etc. (optional)
-  imageUrl     String?
-  description  String?
-  classification Int?     // Radical number (e.g. 85 for "water")
-  frequency    Int?       // Optional: how common this radical is (if using)
+  id             Int     @id @default(autoincrement())
+  symbol         String // Actual radical symbol (e.g. "氵")
+  name           String // Common English name (e.g. "water")
+  nameRomaji     String? // Optional romaji (e.g. "sanzui")
+  meaning        String
+  strokeCount    Int?
+  position       String? // Position info like "left", "top", etc. (optional)
+  imageUrl       String?
+  description    String?
+  classification Int? // Radical number (e.g. 85 for "water")
+  frequency      Int? // Optional: how common this radical is (if using)
 
-  kanjis       Kanji[]   @relation("KanjiRadicals")
+  kanjis Kanji[] @relation("KanjiRadicals")
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt()
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 
   @@unique([symbol])
   @@map("radicals")
