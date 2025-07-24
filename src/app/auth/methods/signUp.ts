@@ -22,6 +22,8 @@ export default async function signUp(
       },
     });
 
+    await this.scheduleService.createInitialUserSchedule(newUser);
+
     return newUser;
   } catch (error: unknown) {
     const handledError = handleError(error, 'Sign Up Error');

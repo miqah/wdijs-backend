@@ -8,54 +8,93 @@ datasource db {
 }
 
 enum WordType {
-  NOUN
-  VERB
-  ADJECTIVE
-  ADVERB
-  CONJUNCTION
-  INTERJECTION
-  PRONOUN
+  N
+  PN
+  AN
+  V1
+  V5U
+  VS
+  ADJ_I
+  ADJ_NA
+  ADV
+  CONJ
+  INTERJ
+  PRON
+  SUFFIX
+  PREFIX
+  EXP
 }
 
-// Users
+enum PracticeType {
+  WORD
+  SENTENCE
+  CONVERSATION
+}
+
 model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique()
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt()
-
-  userSchedule UserSchedule?  @relation("UserToSchedule")
-  userBots     UserBot[]
-  userWords    UserWord[]
-  sentences    UserSentence[]
+  id            Int            @id @default(autoincrement())
+  email         String         @unique()
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt()
+  userBots      UserBot[]
+  userWords     UserWord[]
+  sentences     UserSentence[]
+  scheduleItems ScheduleItem[]
 
   @@map("users")
 }
 
-model UserSchedule {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique()
-  timezone  String
-  startTime DateTime
-  endTime   DateTime
-  frequency String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ScheduleItem {
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  type         PracticeType
+  nextReview   DateTime
+  repetition   Int
+  easeFactor   Float
+  lastReviewed DateTime?
 
-  user User @relation("UserToSchedule", fields: [userId], references: [id])
+  user     User                  @relation(fields: [userId], references: [id])
+  word     ScheduleItemWord?
+  sentence ScheduleItemSentence?
+  bot      ScheduleItemBot?
 
-  @@map("user_schedules")
+  @@map("schedule_items")
+}
+
+model ScheduleItemWord {
+  id             Int @id @default(autoincrement())
+  scheduleItemId Int @unique
+  userWordId     Int @unique
+
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
+  userWord     UserWord     @relation(fields: [userWordId], references: [id])
+}
+
+model ScheduleItemSentence {
+  id             Int @id @default(autoincrement())
+  scheduleItemId Int @unique
+  userSentenceId Int @unique
+
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
+  userSentence UserSentence @relation(fields: [userSentenceId], references: [id])
+}
+
+model ScheduleItemBot {
+  id             Int @id @default(autoincrement())
+  scheduleItemId Int @unique
+  userBotId      Int @unique
+
+  scheduleItem ScheduleItem @relation(fields: [scheduleItemId], references: [id])
+  userBot      UserBot      @relation(fields: [userBotId], references: [id])
 }
 
 model Bot {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String
   basePrompt  String
-  createdAt   DateTime @default(now())
-
-  userBots UserBot[]
+  createdAt   DateTime  @default(now())
+  userBots    UserBot[]
 
   @@map("bots")
 }
@@ -66,29 +105,29 @@ model UserBot {
   botId     Int
   nickname  String
   context   String
+  friendshipLevel    Int      @default(1) 
+  friendshipContext  String? 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt()
 
-  user User @relation(fields: [userId], references: [id])
-  bot  Bot  @relation(fields: [botId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  bot             Bot              @relation(fields: [botId], references: [id])
+  ScheduleItemBot ScheduleItemBot?
 
   @@map("user_bots")
 }
 
-// Learning Stages
 model LearningStage {
-  id           Int     @id @default(autoincrement())
-  stageName    String // e.g., "New", "Learning", "Mastered", "Reviewing", "Forgotten"
-  description  String? // Optional description of the stage
-  stayDuration Int // Duration to stay in this stage (in days or weeks, based on your needs)
-  interval     Int // Spaced repetition interval (e.g., days after which the user should review)
-
-  userWords UserWord[]
+  id           Int        @id @default(autoincrement())
+  stageName    String
+  description  String?
+  stayDuration Int
+  interval     Int
+  userWords    UserWord[]
 
   @@map("learning_stages")
 }
 
-// Test Level
 model TestLevel {
   id          Int     @id @default(autoincrement())
   name        String
@@ -102,19 +141,17 @@ model TestLevel {
   @@map("test_levels")
 }
 
-// UserWords (Each word learned by a user)
 model UserWord {
-  id              Int       @id @default(autoincrement())
+  id              Int @id @default(autoincrement())
   userId          Int
   wordId          Int
-  nextReview      DateTime // Next review date based on spaced repetition
-  repetitionCount Int // Number of repetitions performed on this word
-  learningStageId Int // Foreign key to LearningStage
-  reviewedAt      DateTime? // Last time it was reviewed
+  learningStageId Int
 
-  user          User          @relation(fields: [userId], references: [id])
-  word          Word          @relation(fields: [wordId], references: [id])
-  learningStage LearningStage @relation(fields: [learningStageId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  word             Word              @relation(fields: [wordId], references: [id])
+  learningStage    LearningStage     @relation(fields: [learningStageId], references: [id])
+  ScheduleItemWord ScheduleItemWord?
+  sentenceItems    UserSentenceItem[]
 
   @@map("user_words")
 }
@@ -122,22 +159,37 @@ model UserWord {
 model UserSentence {
   id        Int      @id @default(autoincrement())
   userId    Int
-  wordOrder Json // Array of word IDs in order
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt()
 
-  user User @relation(fields: [userId], references: [id])
+  user                 User                  @relation(fields: [userId], references: [id])
+  sentenceItems        UserSentenceItem[]
+  ScheduleItemSentence ScheduleItemSentence?
 
   @@map("user_sentences")
 }
 
-// Languages
+model UserSentenceItem {
+  id              Int      @id @default(autoincrement())
+  userSentenceId  Int
+  orderIndex      Int
+  userWordId      Int?
+  particleId      Int?
+
+  userSentence UserSentence @relation(fields: [userSentenceId], references: [id])
+  userWord     UserWord?     @relation(fields: [userWordId], references: [id])
+  particle     Particle?     @relation(fields: [particleId], references: [id])
+
+  @@map("user_sentence_items")
+  @@unique([userSentenceId, orderIndex])
+}
+
 model Language {
   id          Int      @id @default(autoincrement())
   name        String
   description String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @updatedAt()
 
   words      Word[]
   testLevels TestLevel[]
@@ -146,56 +198,84 @@ model Language {
   @@map("languages")
 }
 
-// Words (General words)
 model Word {
   id          Int      @id @default(autoincrement())
-  name        String
-  description String
   type        WordType
   languageId  Int
   testLevelId Int
 
-  language  Language   @relation(fields: [languageId], references: [id])
-  testLevel TestLevel  @relation(fields: [testLevelId], references: [id])
-  kanjis    Kanji[]    @relation("KanjiWords")
-  userWords UserWord[]
+  language   Language      @relation(fields: [languageId], references: [id])
+  testLevel  TestLevel     @relation(fields: [testLevelId], references: [id])
+  kanjis     Kanji[]       @relation("KanjiWords")
+  userWords  UserWord[]
+  writings   WordWriting[]
+    readings    WordReading[] 
+  senses     WordSense[]
 
   @@map("words")
 }
 
-// Particles (For languages like Japanese)
+model WordReading {
+  id      Int   @id @default(autoincrement())
+  wordId  Int
+  value   String
+
+  word    Word  @relation(fields: [wordId], references: [id])
+}
+
+model WordWriting {
+  id      Int    @id @default(autoincrement())
+  wordId  Int
+  text    String
+  isKana  Boolean
+
+  word    Word   @relation(fields: [wordId], references: [id])
+
+  @@unique([wordId, text])
+  @@map("word_writings")
+}
+
+model WordSense {
+  id       Int    @id @default(autoincrement())
+  wordId   Int
+  meaning  String
+  tags     String? // e.g., "common", "slang", or parts of speech
+
+  word     Word   @relation(fields: [wordId], references: [id])
+
+  @@map("word_senses")
+}
+
 model Particle {
   id          Int    @id @default(autoincrement())
-  name        String // Particle name (e.g., "は", "が", "に")
-  description String // Description of the particle's use (e.g., subject marker, object marker)
-  type        String // Type of particle (e.g., subject marker, object marker, etc.)
+  name        String
+  description String
+  type        String
   languageId  Int
 
-  language Language @relation(fields: [languageId], references: [id])
+  language     Language         @relation(fields: [languageId], references: [id])
+  sentenceItems UserSentenceItem[]
 
   @@map("particles")
 }
 
 model Kanji {
   id          Int      @id @default(autoincrement())
-  name        String
-  imageUrl    String?
+  character   String   @unique 
   strokeCount Int?
-  examples    String?
-  description String
   grade       Int?
   frequency   Int?
   jlptLevel   Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  imageUrl    String?
 
-  radicals        Radical[]      @relation("KanjiRadicals")
-  words           Word[]         @relation("KanjiWords")
   onyomiReadings  KanjiOnyomi[]
   kunyomiReadings KanjiKunyomi[]
   nanoriReadings  KanjiNanori[]
+  radicals        Radical[]  @relation("KanjiRadicals")
+  words           Word[]     @relation("KanjiWords")
 
-  @@map("kanji")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt()
 }
 
 model KanjiOnyomi {
@@ -225,18 +305,24 @@ model KanjiNanori {
   @@unique([kanjiId, reading])
 }
 
-// Radical
 model Radical {
-  id          Int      @id @default(autoincrement())
-  name        String
-  nameRomaji  String
-  meaning     String
-  strokeCount Int?
-  imageUrl    String?
-  description String
-  kanjis      Kanji[]  @relation("KanjiRadicals")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  symbol       String    // Actual radical symbol (e.g. "氵")
+  name         String    // Common English name (e.g. "water")
+  nameRomaji   String?   // Optional romaji (e.g. "sanzui")
+  meaning      String
+  strokeCount  Int?
+  position     String?   // Position info like "left", "top", etc. (optional)
+  imageUrl     String?
+  description  String?
+  classification Int?     // Radical number (e.g. 85 for "water")
+  frequency    Int?       // Optional: how common this radical is (if using)
 
+  kanjis       Kanji[]   @relation("KanjiRadicals")
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt()
+
+  @@unique([symbol])
   @@map("radicals")
 }

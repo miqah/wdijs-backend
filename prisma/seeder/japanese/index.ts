@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { XMLParser } from 'fast-xml-parser';
 import * as zlib from 'zlib';
+import { seedBaseBot } from './methods/seedBaseBot';
+import { seedJMDict } from './methods/seedJmDict';
 
 async function ensureBasicDataExists(prismaClient: PrismaClient) {
   const japaneseLanguage = await prismaClient.language.findFirst({
@@ -83,7 +85,7 @@ async function importFromKanjidic(prismaClient: PrismaClient) {
         if (!literal) continue;
         // Check if kanji already exists
         const existingKanji = await prismaClient.kanji.findFirst({
-          where: { name: literal },
+          where: { character: literal },
         });
         if (existingKanji) {
           console.log(`Kanji ${literal} already exists, skipping...`);
@@ -181,9 +183,7 @@ async function importFromKanjidic(prismaClient: PrismaClient) {
           // Create the kanji entry - without connecting radicals or creating words
           await prismaClient.kanji.create({
             data: {
-              name: literal,
-              description: meanings || 'No meaning available',
-              examples,
+              character: literal,
               grade,
               frequency,
               jlptLevel,
@@ -340,7 +340,7 @@ async function linkKanjiWithRadicals(
   for (const radical of allRadicals) {
     // Check if radical already exists
     const existingRadical = await prismaClient.radical.findFirst({
-      where: { name: radical },
+      where: { symbol: radical },
     });
 
     if (existingRadical) {
@@ -349,10 +349,10 @@ async function linkKanjiWithRadicals(
       // Create new radical
       const newRadical = await prismaClient.radical.create({
         data: {
-          name: radical,
+          symbol: radical,
+          name: '',
           nameRomaji: '',
           meaning: `Radical ${radical}`,
-          description: `Radical component ${radical}`,
         },
       });
 
@@ -377,7 +377,7 @@ async function linkKanjiWithRadicals(
       try {
         // Find the kanji in the database
         const existingKanji = await prismaClient.kanji.findFirst({
-          where: { name: kanji },
+          where: { character: kanji },
         });
 
         if (!existingKanji) {
@@ -419,8 +419,10 @@ async function linkKanjiWithRadicals(
 export async function createJapaneseLanguage(prismaClient: PrismaClient) {
   try {
     await ensureBasicDataExists(prismaClient);
+    await seedJMDict(prismaClient);
     await importFromKanjidic(prismaClient);
     await linkKanjiWithRadicals(prismaClient);
+    await seedBaseBot(prismaClient);
     console.log('Data import completed successfully!');
   } catch (error) {
     console.error('Error in data import:', error);

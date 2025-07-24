@@ -1,5 +1,12 @@
 // translation.dto.ts
-import { IsString, IsObject, IsNotEmpty, IsNumber, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsObject,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 
 enum AudioEncoding {
   LINEAR16 = 'LINEAR16',
@@ -27,5 +34,9 @@ export class TranslationRequestDto {
 
   @IsObject()
   @IsNotEmpty()
-  config: AudioConfigDto; 
+  config: AudioConfigDto;
+
+  @IsString()
+  @IsNotEmpty()
+  userBotId: string;
 }

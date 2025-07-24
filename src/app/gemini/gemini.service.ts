@@ -11,7 +11,82 @@ export class GeminiService {
     this.googleAi = new GoogleGenAI({ apiKey });
   }
 
-  // A helper to wrap the stream from generateContentStream as async generator yielding text chunks
+  async *getBotIntroduction({
+    targetLang,
+    userContext,
+    baseContext,
+  }: {
+    targetLang: string;
+    userContext?: string;
+    baseContext?: string;
+  }): AsyncGenerator<string> {
+    const introPrompt = `
+${baseContext}
+
+${userContext}
+
+Please write a short, friendly introduction in ${targetLang} from the AI bot to a new user.
+The tone should be warm and welcoming.
+
+Important:
+- Reply only in ${targetLang}
+- Do not include any labels, markdown, or JSON
+- Just return plain natural text
+    `.trim();
+
+    yield* this.streamGenerator(introPrompt);
+  }
+
+  async *getSynonyms(word: string, lang: string): AsyncGenerator<string> {
+    const prompt = `
+Give a comma-separated list of synonyms for the word "${word}" in ${lang}.
+
+Important:
+- Do not include labels like "Synonyms:"
+- No JSON or markdown
+- Just return the plain list
+    `.trim();
+
+    yield* this.streamGenerator(prompt);
+  }
+
+  async *translateWithContext({
+    text,
+    targetLang,
+    userContext,
+    baseContext,
+  }: {
+    text: string;
+    targetLang: string;
+    userContext?: string;
+    baseContext?: string;
+  }): AsyncGenerator<string> {
+    if (!text?.trim()) {
+      yield '';
+      return;
+    }
+
+    const finalPrompt = `
+${baseContext}
+
+${userContext}
+
+Please respond to the user's message in fluent, natural ${targetLang}.
+Then continue the conversation with a friendly, casual follow-up.
+
+User message: "${text}"
+
+Important:
+- Only reply in ${targetLang}
+- Do not include any labels like "Reply:" or "Options:"
+- Do not use JSON or special formatting
+- Do not explain the answer
+- Just return a natural conversational reply
+    `.trim();
+
+    yield* this.streamGenerator(finalPrompt);
+  }
+
   private async *streamGenerator(prompt: string): AsyncGenerator<string> {
     const stream = await this.googleAi.models.generateContentStream({
       model: 'gemini-2.5-flash',
@@ -29,37 +104,5 @@ export class GeminiService {
         yield textChunk;
       }
     }
-  }
-
-  async *translate(text: string, targetLang: string): AsyncGenerator<string> {
-    if (!text || text.trim() === '') {
-      yield '';
-      return;
-    }
-
-    const prompt = `
-You are a bilingual assistant fluent in English and Japanese. Your task is to:
-
-1. **Translate** the input below into **natural, fluent Japanese**, appropriate for a native speaker.
-2. If the input is a **question**, answer it briefly and politely in Japanese.
-3. Return **two parts**:
-   - 📘 The Japanese text
-   - 🔤 The **romaji (pronunciation)** version below it
-
-Use this format exactly:
-
-Japanese: [your Japanese response]
-Romaji: [romaji version of that response]
-
-Text to process:
-"${text.trim()}"
-`.trim();
-
-    yield* this.streamGenerator(prompt);
-  }
-  // If you want synonyms to stream too, you can do the same
-  async *getSynonyms(word: string, lang: string): AsyncGenerator<string> {
-    const prompt = `Provide a comma-separated list of synonyms for the word "${word}" in ${lang}.`;
-    yield* this.streamGenerator(prompt);
   }
 }

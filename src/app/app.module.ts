@@ -10,7 +10,9 @@ import { TranslatorModule } from './translator/translator.module';
 import { KanjiBuilderModule } from './kanji-builder/kanji-builder.module';
 import { APP_GUARD } from '@nestjs/core';
 import { FirebaseAuthGuard } from 'app/firebase/guards/firebase-auth.guard';
-import { VoskModule } from './vosk/vosk.module';
+import { ScheduleModule } from './schedule/schedule.module';
+import { UserModule } from './user/user.module';
+import { KuromojiModule } from './kuromoji/kuromoji.module';
 
 @Module({
   imports: [
@@ -21,12 +23,17 @@ import { VoskModule } from './vosk/vosk.module';
     GeminiModule,
     TranslatorModule,
     KanjiBuilderModule,
-    VoskModule,
+    ScheduleModule,
+    UserModule,
+    KuromojiModule,
   ],
   controllers: [AppController],
-  providers: [AppService, {
-    provide: APP_GUARD,
-    useClass: FirebaseAuthGuard
-  }],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: FirebaseAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

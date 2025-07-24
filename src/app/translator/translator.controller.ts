@@ -1,8 +1,14 @@
-import { Body, Controller, MessageEvent, Post, Sse } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  MessageEvent,
+  Param,
+  Post,
+  Sse,
+} from '@nestjs/common';
 import { TranslatorService } from './translator.service';
 import { TranslationRequestDto } from './dtos/translation.dto';
-import { User } from 'decorators/user.decorator';
-import { User as UserType } from '@prisma/client';
 import { Observable } from 'rxjs';
 
 @Controller('/translator')
@@ -13,10 +19,16 @@ export class TranslatorController {
   @Sse()
   translate(
     @Body() translationRequestDto: TranslationRequestDto,
-    @User() user: UserType,
   ): Observable<MessageEvent> {
     return this.translatorService.translate({
       translationRequestDto,
     });
+  }
+
+  @Sse(':userBotId/introduction')
+  getTranslatorIntroduction(
+    @Param('userBotId') userBotId: string,
+  ): Observable<MessageEvent> {
+    return this.translatorService.getTranslatorIntroduction({ userBotId });
   }
 }

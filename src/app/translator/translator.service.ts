@@ -2,7 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { translate } from './methods/translate';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '../gemini/gemini.service';
-import { VoskService } from 'app/vosk/vosk.service';
+import { getTranslatorIntroduction } from './methods/getTranslatorIntroduction';
+import { KuromojiService } from 'app/kuromoji/kuromoji.service';
 
 @Injectable()
 export class TranslatorService {
@@ -10,8 +11,9 @@ export class TranslatorService {
   constructor(
     protected readonly prismaService: PrismaService,
     protected readonly geminiService: GeminiService,
-    protected readonly voskService: VoskService
+    protected readonly kuromojiService: KuromojiService,
   ) {}
 
   translate = translate;
+  getTranslatorIntroduction = getTranslatorIntroduction;
 }

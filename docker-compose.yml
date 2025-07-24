@@ -9,9 +9,17 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: nestjs
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - nestjs-network
+  whisper:
+    build:
+      context: ./whisper-server
+    command: python run.py
+    ports:
+      - '8000:8000'
     networks:
       - nestjs-network
 
