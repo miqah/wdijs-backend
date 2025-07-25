@@ -1,11 +1,16 @@
 import { MessageEvent, NotFoundException } from '@nestjs/common';
-import { TranslationRequestDto } from '../dtos/translation.dto';
+import {
+  BotTranslationStreamChunk,
+  TranslationRequestDto,
+  UserResponseStreamChunk,
+} from '../dtos/translation.dto';
 import { convertToWav } from 'utils/convertToWav';
 import { Observable } from 'rxjs';
 import { TranslatorService } from '../translator.service';
 import { randomUUID } from 'crypto';
 import * as FormData from 'form-data';
 import axios, { AxiosResponse } from 'axios';
+import { User } from '@prisma/client';
 
 interface TranscriptionResponse {
   text: string;
@@ -15,8 +20,10 @@ export function translate(
   this: TranslatorService,
   {
     translationRequestDto,
+    user,
   }: {
     translationRequestDto: TranslationRequestDto;
+    user: User;
   },
 ): Observable<MessageEvent> {
   this.logger.log('Starting streaming translation process');
@@ -42,8 +49,13 @@ export function translate(
         const translationMessageKey = randomUUID();
 
         if (text) {
+          const userChunk: UserResponseStreamChunk = {
+            type: 'userResponse',
+            key: responseMessageKey,
+            userResponse: text,
+          };
           subscriber.next({
-            data: JSON.stringify({ response: text, key: responseMessageKey }),
+            data: JSON.stringify(userChunk),
           });
 
           await streamTranslation.call(
@@ -53,6 +65,7 @@ export function translate(
             userBot,
             language.name,
             translationMessageKey,
+            user,
           );
         }
 
@@ -118,6 +131,7 @@ async function streamTranslation(
   userBot: any,
   language: string,
   key: string,
+  user: User,
 ): Promise<void> {
   let chunkCount = 0;
 
@@ -132,77 +146,20 @@ async function streamTranslation(
       `Sending translation chunk #${chunkCount}: "${chunk.slice(0, 50)}${chunk.length > 50 ? '...' : ''}"`,
     );
 
-    const tokens = this.kuromojiService.tokenize(chunk);
-    const foundWords: any[] = [];
+    const words = await this.wordService.processAndTrackWordsForUser(
+      chunk,
+      user.id,
+    );
 
-    for (const token of tokens) {
-      const surface = token.surface_form;
-      const reading = token.reading; // This will be in katakana
-
-      // Check if the token contains kanji
-      const containsKanji = /[\u4e00-\u9faf]/.test(surface);
-
-      // Determine if we should search in writings or readings
-      let word;
-
-      if (containsKanji) {
-        // If the surface form contains kanji, look it up in writings
-        word = await this.prismaService.word.findFirst({
-          where: {
-            writings: {
-              some: {
-                text: surface,
-              },
-            },
-          },
-          include: {
-            writings: true,
-            senses: {
-              include: {
-                englishGlosses: true,
-              },
-            },
-          },
-        });
-      } else {
-        // If it's all kana, look it up in readings
-        word = await this.prismaService.word.findFirst({
-          where: {
-            readings: {
-              some: {
-                value: surface,
-              },
-            },
-          },
-          include: {
-            readings: true,
-            senses: {
-              include: {
-                englishGlosses: true,
-              },
-            },
-          },
-        });
-      }
-
-      if (word) {
-        foundWords.push({
-          surface,
-          wordId: word.id,
-          senses: word.senses.map((sense) => ({
-            partOfSpeech: sense.partOfSpeech,
-            glosses: sense.englishGlosses.map((g) => g.text),
-          })),
-        });
-      }
-    }
-    console.log(JSON.stringify(foundWords, null, 2));
+    const chunkPayload: BotTranslationStreamChunk = {
+      type: 'botChunk',
+      key,
+      botResponse: chunk,
+      botResponseWords: words,
+    };
 
     subscriber.next({
-      data: JSON.stringify({
-        transcription: chunk,
-        key,
-      }),
+      data: JSON.stringify(chunkPayload),
     });
   }
 

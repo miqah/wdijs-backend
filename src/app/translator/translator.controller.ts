@@ -10,6 +10,8 @@ import {
 import { TranslatorService } from './translator.service';
 import { TranslationRequestDto } from './dtos/translation.dto';
 import { Observable } from 'rxjs';
+import { UserRequest } from 'decorators/user.decorator';
+import { User } from '@prisma/client';
 
 @Controller('/translator')
 export class TranslatorController {
@@ -19,9 +21,11 @@ export class TranslatorController {
   @Sse()
   translate(
     @Body() translationRequestDto: TranslationRequestDto,
+    @UserRequest() user: User,
   ): Observable<MessageEvent> {
     return this.translatorService.translate({
       translationRequestDto,
+      user,
     });
   }
 

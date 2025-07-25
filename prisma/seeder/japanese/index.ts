@@ -29,6 +29,61 @@ async function ensureBasicDataExists(prismaClient: PrismaClient) {
     });
     console.log('Japanese language and test levels created.');
   }
+
+  const learningStages = [
+    {
+      stageName: 'Hajimete',
+      description: 'Just encountered (初めて) - First time seeing this item.',
+      stayDuration: 0,
+      interval: 0,
+    },
+    {
+      stageName: 'Manabu',
+      description: 'Learning (学ぶ) - Memorization phase. Review soon.',
+      stayDuration: 1,
+      interval: 1,
+    },
+    {
+      stageName: 'Fukushuu',
+      description: 'Review (復習) - First review interval.',
+      stayDuration: 1,
+      interval: 2,
+    },
+    {
+      stageName: 'Jōren',
+      description: 'Regular (常連) - Building memory with regular reviews.',
+      stayDuration: 2,
+      interval: 4,
+    },
+    {
+      stageName: 'Nareteiru',
+      description:
+        'Familiar (慣れている) - Getting comfortable with this content.',
+      stayDuration: 3,
+      interval: 7,
+    },
+    {
+      stageName: 'Senpai',
+      description: 'Mastery nearing (先輩) - Becoming an expert!',
+      stayDuration: 5,
+      interval: 14,
+    },
+    {
+      stageName: 'Kami',
+      description: 'Legendary (神) - Mastered, review rarely needed.',
+      stayDuration: 7,
+      interval: 30,
+    },
+  ];
+
+  for (const stage of learningStages) {
+    await prismaClient.learningStage.upsert({
+      where: { stageName: stage.stageName },
+      create: stage,
+      update: {},
+    });
+    console.log(`LearningStage "${stage.stageName}" checked/created.`);
+  }
 }
 
 async function importFromKanjidic(prismaClient: PrismaClient) {
@@ -415,10 +470,10 @@ async function linkKanjiWithRadicals(
 export async function createJapaneseLanguage(prismaClient: PrismaClient) {
   try {
     await ensureBasicDataExists(prismaClient);
-    await importFromKanjidic(prismaClient);
-    await linkKanjiWithRadicals(prismaClient);
-    await seedJMDict(prismaClient);
-    await seedBaseBot(prismaClient);
+    // await importFromKanjidic(prismaClient);
+    // await linkKanjiWithRadicals(prismaClient);
+    // await seedJMDict(prismaClient);
+    // await seedBaseBot(prismaClient);
     console.log('Data import completed successfully!');
   } catch (error) {
     console.error('Error in data import:', error);

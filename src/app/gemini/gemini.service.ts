@@ -31,7 +31,7 @@ The tone should be warm and welcoming.
 Important:
 - Reply only in ${targetLang}
 - Do not include any labels, markdown, or JSON
-- Just return plain natural text
+- Just return plain natural text.
     `.trim();
 
     yield* this.streamGenerator(introPrompt);

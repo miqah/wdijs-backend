@@ -1,10 +1,10 @@
 // translation.dto.ts
+import { WordType } from '@prisma/client';
 import {
   IsString,
   IsObject,
   IsNotEmpty,
   IsNumber,
-  IsOptional,
   IsEnum,
 } from 'class-validator';
 
@@ -39,4 +39,27 @@ export class TranslationRequestDto {
   @IsString()
   @IsNotEmpty()
   userBotId: string;
+}
+
+export interface ProcessedWord {
+  surface: string;
+  wordId: number;
+  senses: {
+    partOfSpeech: WordType;
+    glosses: string[];
+  }[];
+  isNewForUser?: boolean;
+}
+
+export interface UserResponseStreamChunk {
+  type: 'userResponse';
+  key: string;
+  userResponse: string;
+}
+
+export interface BotTranslationStreamChunk {
+  type: 'botChunk';
+  key: string;
+  botResponse: string;
+  botResponseWords: ProcessedWord[];
 }

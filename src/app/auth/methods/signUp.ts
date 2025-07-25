@@ -5,7 +5,13 @@ import { handleError } from '../../../utils/handleError';
 
 export default async function signUp(
   this: AuthService,
-  email: string,
+  {
+    email,
+    firebaseUid,
+  }: {
+    email: string;
+    firebaseUid: string;
+  },
 ): Promise<User | null> {
   try {
     const existingUser = await this.prismaService.user.findUnique({
@@ -19,6 +25,7 @@ export default async function signUp(
     const newUser = await this.prismaService.user.create({
       data: {
         email,
+        firebaseUid,
       },
     });
 

@@ -9,8 +9,9 @@ export class AuthController {
 
   @Public()
   @Post('/sign-up')
-  async signup(@Body() body: { email: string }): Promise<User | null> {
-    const { email } = body;
-    return this.authService.signUp(email);
+  async signup(
+    @Body() body: { email: string; firebaseUid: string },
+  ): Promise<User | null> {
+    return this.authService.signUp(body);
   }
 }

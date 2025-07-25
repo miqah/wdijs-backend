@@ -78,6 +78,8 @@ enum PracticeType {
 model User {
   id            Int            @id @default(autoincrement())
   email         String         @unique()
+  firebaseUid   String         @unique
+   
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt()
   userBots      UserBot[]
@@ -167,6 +169,7 @@ model LearningStage {
   stayDuration Int
   interval     Int
   userWords    UserWord[]
+  userSentences UserSentence[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt()
 
@@ -215,12 +218,15 @@ model UserSentence {
   userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt()
-  
+  learningStageId    Int  
+
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   wordOccurrences      SentenceWordOccurrence[] 
+    learningStage      LearningStage           @relation(fields: [learningStageId], references: [id]) 
   ScheduleItemSentence ScheduleItemSentence?
   
   @@index([userId])
+  @@index([learningStageId])   
   @@map("user_sentences")
 }
 
@@ -367,13 +373,11 @@ model Kanji {
   onyomiReadings  KanjiOnyomi[]
   kunyomiReadings KanjiKunyomi[]
   nanoriReadings  KanjiNanori[]
-  radicals        Radical[]      @relation("kanji_radicals")
+  radicals        Radical[]      @relation("KanjiRadicals")
   writingUsages KanjiInWriting[] 
 
   @@index([jlptLevel])
   @@index([grade])
-
-  @@map("kanji")
 }
 
 model KanjiInWriting {
@@ -448,7 +452,7 @@ model Radical {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt()
 
-  kanjis Kanji[] @relation("kanji_radicals")
+  kanjis Kanji[] @relation("KanjiRadicals")
 
   @@unique([symbol])
   @@index([strokeCount])
